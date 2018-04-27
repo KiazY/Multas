@@ -170,15 +170,26 @@ namespace Multas_tA.Controllers {
       // more details see https://go.microsoft.com/fwlink/?LinkId=317598.
       [HttpPost]
       [ValidateAntiForgeryToken]
-      public ActionResult Edit([Bind(Include = "ID,Nome,Fotografia,Esquadra")] Agentes agente) {
-         // falta tratar das imagens, como feito no CREATE
+      public ActionResult Edit([Bind(Include = "ID,Nome,Esquadra")] Agentes agente, HttpPostedFileBase fileUploadFotografia) {
+            // falta tratar das imagens, como feito no CREATE
+            int fotoID = agente.ID;
+            string nomeFotografia = "Agente_" + fotoID + ".jpg";
+            string caminhoParaFotografia = Path.Combine(Server.MapPath("~/imagens/"), nomeFotografia); // indica onde a imagem será guardada
+                                                                                                       
+            agente.Fotografia = nomeFotografia;
 
-         if(ModelState.IsValid) {
+            if (ModelState.IsValid) {    
             // atualiza os dados do Agente, na estrutura de dados em memória
             db.Entry(agente).State = EntityState.Modified;
             // Commit
             db.SaveChanges();
-            return RedirectToAction("Index");
+
+                // guardar a imagem no disco rígido
+                if(fileUploadFotografia!=null)
+                    fileUploadFotografia.SaveAs(caminhoParaFotografia);
+
+                // redireciona o utilizador para a página de início
+                return RedirectToAction("Index");
          }
          return View(agente);
       }
@@ -220,12 +231,17 @@ namespace Multas_tA.Controllers {
       public ActionResult DeleteConfirmed(int id) {
          // procurar o Agente
          Agentes agente = db.Agentes.Find(id);
-
-         try {
+            //procura a imagem do Agente
+            int fotoID = agente.ID;
+            string nomeFotografia = "Agente_" + fotoID + ".jpg";
+            string path = "~/imagens/"+nomeFotografia;
+            FileInfo fotografia = new FileInfo(path);
+            try {
             // remover da memória
             db.Agentes.Remove(agente);
-            // commit na BD
-            db.SaveChanges();
+                fotografia.Delete();
+                // commit na BD
+                db.SaveChanges();
             // redirecionar para a página inicial
             return RedirectToAction("Index");
          }
